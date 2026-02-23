@@ -13,7 +13,7 @@ export default function Dashboard() {
   const openJobs = jobs.filter(j=>j.status==='open').length;
   const pending = apps.filter(a=>a.status==='pending').length;
   const totalHours = apps.reduce((s,a)=>s+(a.hoursWorked||0),0);
-  const approved = apps.filter(a=>a.status==='approved').length;
+  
   const statusColor = {pending:{bg:'#fef9c3',color:'#b45309'},approved:{bg:'#dcfce7',color:'#15803d'},rejected:{bg:'#fee2e2',color:'#dc2626'}};
   return (
     <Layout>
