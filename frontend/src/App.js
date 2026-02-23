@@ -6,12 +6,12 @@ import Dashboard from './pages/Dashboard';
 import Jobs from './pages/Jobs';
 import Applications from './pages/Applications';
 import Students from './pages/Students';
-
+import Schedule from './pages/Schedule';
+import Reports from './pages/Reports';
 const PrivateRoute = ({ children }) => {
   const { user } = useAuth();
   return user ? children : <Navigate to="/" />;
 };
-
 function App() {
   return (
     <AuthProvider>
@@ -23,10 +23,11 @@ function App() {
           <Route path="/jobs" element={<PrivateRoute><Jobs /></PrivateRoute>} />
           <Route path="/applications" element={<PrivateRoute><Applications /></PrivateRoute>} />
           <Route path="/students" element={<PrivateRoute><Students /></PrivateRoute>} />
+          <Route path="/schedule" element={<PrivateRoute><Schedule /></PrivateRoute>} />
+          <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
   );
 }
-
 export default App;

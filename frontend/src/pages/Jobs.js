@@ -1,143 +1,87 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
 import API from '../api';
 import { useAuth } from '../context/AuthContext';
-
 export default function Jobs() {
   const [jobs, setJobs] = useState([]);
-  const [form, setForm] = useState({ title:'', department:'', description:'', hoursPerWeek:'', pay:'', slots:'' });
+  const [form, setForm] = useState({title:'',department:'',description:'',hoursPerWeek:'',pay:'',slots:''});
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const { user } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => { API.get('/jobs').then(r => setJobs(r.data)); }, []);
-
+  useEffect(()=>{ API.get('/jobs').then(r=>setJobs(r.data)); },[]);
   const handleApply = async (jobId) => {
-    try {
-      await API.post('/applications', { job: jobId });
-      alert('✅ Application submitted successfully!');
-    } catch (err) {
-      alert(err.response?.data?.msg || 'Error applying');
-    }
+    try { await API.post('/applications',{job:jobId}); alert('Application submitted!'); }
+    catch(err){ alert(err.response?.data?.msg||'Error'); }
   };
-
   const handleCreate = async (e) => {
     e.preventDefault();
-    await API.post('/jobs', form);
+    await API.post('/jobs',form);
     setShowForm(false);
-    API.get('/jobs').then(r => setJobs(r.data));
+    API.get('/jobs').then(r=>setJobs(r.data));
   };
-
   const handleDelete = async (id) => {
-    if(window.confirm('Delete this job?')) {
-      await API.delete(`/jobs/${id}`);
-      setJobs(jobs.filter(j => j._id !== id));
-    }
+    if(window.confirm('Delete?')){ await API.delete(`/jobs/${id}`); setJobs(jobs.filter(j=>j._id!==id)); }
   };
-
-  const filtered = jobs.filter(j =>
-    j.title.toLowerCase().includes(search.toLowerCase()) ||
-    j.department.toLowerCase().includes(search.toLowerCase())
-  );
-
+  const filtered = jobs.filter(j=>j.title.toLowerCase().includes(search.toLowerCase())||j.department.toLowerCase().includes(search.toLowerCase()));
+  const deptBg = ['#eff6ff','#f0fdf4','#faf5ff','#fff7ed','#fef9c3'];
+  const deptColor = ['#1d4ed8','#15803d','#7c3aed','#c2410c','#b45309'];
   return (
-    <div style={s.page}>
-      <div style={s.sidebar}>
-        <div style={s.logo}>WS</div>
-        <nav style={s.nav}>
-          <button style={s.navBtn} onClick={() => navigate('/dashboard')}>🏠 Dashboard</button>
-          <button style={{...s.navBtn, ...s.activeNav}}>💼 Jobs</button>
-          <button style={s.navBtn} onClick={() => navigate('/applications')}>📋 Applications</button>
-          {user?.role === 'admin' && <button style={s.navBtn} onClick={() => navigate('/students')}>👥 Students</button>}
-        </nav>
-      </div>
-
-      <div style={s.main}>
-        <div style={s.topbar}>
-          <div>
-            <h1 style={s.pageTitle}>Job Listings</h1>
-            <p style={s.pageSub}>{jobs.filter(j=>j.status==='open').length} positions available</p>
-          </div>
-          {user?.role === 'admin' && (
-            <button style={s.addBtn} onClick={() => setShowForm(!showForm)}>+ Post New Job</button>
-          )}
+    <Layout>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
+        <div>
+          <h1 style={{fontSize:'22px',fontWeight:'700',color:'#111827',margin:0}}>Job Postings</h1>
+          <p style={{fontSize:'14px',color:'#6b7280',marginTop:'4px'}}>{jobs.filter(j=>j.status==='open').length} open positions available</p>
         </div>
-
-        <input style={s.search} placeholder="🔍  Search jobs by title or department..."
-          value={search} onChange={e => setSearch(e.target.value)} />
-
-        {showForm && (
-          <form onSubmit={handleCreate} style={s.form}>
-            <h3 style={{margin:'0 0 16px 0', color:'#0f172a'}}>Post a New Job</h3>
-            <div style={s.formGrid}>
-              <input style={s.input} placeholder="Job Title" onChange={e=>setForm({...form,title:e.target.value})} required />
-              <input style={s.input} placeholder="Department" onChange={e=>setForm({...form,department:e.target.value})} required />
-              <input style={s.input} placeholder="Hours/Week" type="number" onChange={e=>setForm({...form,hoursPerWeek:e.target.value})} />
-              <input style={s.input} placeholder="Pay ($/hr)" type="number" onChange={e=>setForm({...form,pay:e.target.value})} />
-              <input style={s.input} placeholder="Available Slots" type="number" onChange={e=>setForm({...form,slots:e.target.value})} />
-              <input style={s.input} placeholder="Description" onChange={e=>setForm({...form,description:e.target.value})} />
+        {user?.role==='admin'&&<button style={{padding:'9px 18px',background:'#2563eb',color:'#fff',border:'none',borderRadius:'8px',fontWeight:'600',fontSize:'14px',cursor:'pointer'}} onClick={()=>setShowForm(!showForm)}>+ Post New Job</button>}
+      </div>
+      <div style={{display:'flex',gap:'12px',marginBottom:'20px'}}>
+        <div style={{flex:1,position:'relative'}}>
+          <span style={{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)'}}>🔍</span>
+          <input style={{width:'100%',padding:'10px 14px 10px 36px',border:'1px solid #e5e7eb',borderRadius:'8px',fontSize:'14px',outline:'none',boxSizing:'border-box',background:'#fff'}} placeholder="Search jobs..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        </div>
+        <select style={{padding:'10px 14px',border:'1px solid #e5e7eb',borderRadius:'8px',fontSize:'14px',outline:'none',background:'#fff'}}><option>All Status</option><option>open</option><option>closed</option></select>
+      </div>
+      {showForm&&(
+        <div style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:'12px',padding:'24px',marginBottom:'24px'}}>
+          <h3 style={{fontSize:'16px',fontWeight:'700',color:'#111827',margin:'0 0 20px 0'}}>Post a New Job</h3>
+          <form onSubmit={handleCreate}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'20px'}}>
+              {[['Job Title','title','text'],['Department','department','text'],['Hours/Week','hoursPerWeek','number'],['Pay ($/hr)','pay','number'],['Slots','slots','number'],['Description','description','text']].map(([label,field,type])=>(
+                <div key={field}>
+                  <label style={{display:'block',fontSize:'12px',fontWeight:'600',color:'#374151',marginBottom:'6px'}}>{label}</label>
+                  <input type={type} style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:'8px',fontSize:'14px',outline:'none',boxSizing:'border-box'}} onChange={e=>setForm({...form,[field]:e.target.value})}/>
+                </div>
+              ))}
             </div>
-            <button style={s.addBtn} type="submit">Create Job</button>
+            <div style={{display:'flex',gap:'10px'}}>
+              <button type="submit" style={{padding:'9px 18px',background:'#2563eb',color:'#fff',border:'none',borderRadius:'8px',fontWeight:'600',fontSize:'14px',cursor:'pointer'}}>Create Job</button>
+              <button type="button" onClick={()=>setShowForm(false)} style={{padding:'9px 18px',background:'#f3f4f6',color:'#374151',border:'none',borderRadius:'8px',fontWeight:'600',fontSize:'14px',cursor:'pointer'}}>Cancel</button>
+            </div>
           </form>
-        )}
-
-        <div style={s.grid}>
-          {filtered.map(job => (
-            <div key={job._id} style={s.card}>
-              <div style={s.cardTop}>
-                <div style={s.deptBadge}>{job.department}</div>
-                <span style={{...s.statusBadge, background: job.status==='open'?'#dcfce7':'#fee2e2', color: job.status==='open'?'#16a34a':'#dc2626'}}>{job.status}</span>
-              </div>
-              <h3 style={s.jobTitle}>{job.title}</h3>
-              <p style={s.jobDesc}>{job.description || 'No description provided.'}</p>
-              <div style={s.jobMeta}>
-                <span style={s.metaItem}>⏱ {job.hoursPerWeek}h/week</span>
-                <span style={s.metaItem}>💰 ${job.pay}/hr</span>
-                <span style={s.metaItem}>👥 {job.slots} slots</span>
-              </div>
-              <div style={s.cardActions}>
-                {user?.role === 'student' && job.status === 'open' && (
-                  <button style={s.applyBtn} onClick={() => handleApply(job._id)}>Apply Now</button>
-                )}
-                {user?.role === 'admin' && (
-                  <button style={s.deleteBtn} onClick={() => handleDelete(job._id)}>Delete</button>
-                )}
-              </div>
-            </div>
-          ))}
         </div>
+      )}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'16px'}}>
+        {filtered.map((job,i)=>(
+          <div key={job._id} style={{background:'#fff',border:'1px solid #e5e7eb',borderRadius:'12px',padding:'20px',display:'flex',flexDirection:'column',gap:'10px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{padding:'4px 10px',borderRadius:'6px',fontSize:'12px',fontWeight:'600',background:deptBg[i%5],color:deptColor[i%5]}}>{job.department}</span>
+              <span style={{padding:'4px 10px',borderRadius:'20px',fontSize:'12px',fontWeight:'500',background:job.status==='open'?'#dcfce7':'#fee2e2',color:job.status==='open'?'#15803d':'#dc2626'}}>{job.status}</span>
+            </div>
+            <h3 style={{fontSize:'16px',fontWeight:'700',color:'#111827',margin:0}}>{job.title}</h3>
+            <p style={{fontSize:'13px',color:'#6b7280',lineHeight:'1.5',margin:0}}>{job.description||'No description provided.'}</p>
+            <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
+              <div style={{fontSize:'13px',color:'#6b7280'}}>🕐 {job.hoursPerWeek||'—'} hrs/week</div>
+              <div style={{fontSize:'13px',color:'#6b7280'}}>💵 ${job.pay||'—'}/hr</div>
+              <div style={{fontSize:'13px',color:'#6b7280'}}>👥 {job.slots||'—'} slots available</div>
+            </div>
+            <div style={{display:'flex',gap:'8px',marginTop:'4px'}}>
+              {user?.role==='student'&&job.status==='open'&&<button onClick={()=>handleApply(job._id)} style={{padding:'8px 16px',background:'#2563eb',color:'#fff',border:'none',borderRadius:'8px',fontWeight:'600',fontSize:'13px',cursor:'pointer'}}>Apply Now</button>}
+              {user?.role==='admin'&&<><button style={{padding:'8px 16px',background:'#f3f4f6',color:'#374151',border:'none',borderRadius:'8px',fontWeight:'600',fontSize:'13px',cursor:'pointer'}}>Edit</button><button onClick={()=>handleDelete(job._id)} style={{padding:'8px 16px',background:'#fee2e2',color:'#dc2626',border:'none',borderRadius:'8px',fontWeight:'600',fontSize:'13px',cursor:'pointer'}}>Delete</button></>}
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
+      {filtered.length===0&&<div style={{textAlign:'center',padding:'40px',color:'#9ca3af'}}>No jobs found.</div>}
+    </Layout>
   );
 }
-
-const s = {
-  page: { display:'flex', height:'100vh', fontFamily:'sans-serif', background:'#f8fafc' },
-  sidebar: { width:'240px', background:'#0f172a', display:'flex', flexDirection:'column', padding:'24px 16px' },
-  logo: { background:'#2563eb', color:'white', width:'40px', height:'40px', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'800', fontSize:'18px', marginBottom:'32px' },
-  nav: { display:'flex', flexDirection:'column', gap:'4px' },
-  navBtn: { padding:'10px 14px', background:'transparent', color:'#94a3b8', border:'none', borderRadius:'8px', cursor:'pointer', textAlign:'left', fontSize:'14px', fontWeight:'500' },
-  activeNav: { background:'rgba(37,99,235,0.15)', color:'#60a5fa' },
-  main: { flex:1, overflowY:'auto', padding:'32px' },
-  topbar: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' },
-  pageTitle: { fontSize:'24px', fontWeight:'700', color:'#0f172a', margin:0 },
-  pageSub: { color:'#64748b', fontSize:'14px', marginTop:'4px' },
-  addBtn: { padding:'10px 20px', background:'#2563eb', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'600', fontSize:'14px' },
-  search: { width:'100%', padding:'12px 16px', border:'1.5px solid #e2e8f0', borderRadius:'10px', fontSize:'14px', marginBottom:'24px', boxSizing:'border-box', outline:'none' },
-  form: { background:'white', padding:'24px', borderRadius:'12px', marginBottom:'24px', boxShadow:'0 1px 4px rgba(0,0,0,0.06)' },
-  formGrid: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'16px' },
-  input: { padding:'10px 14px', border:'1.5px solid #e2e8f0', borderRadius:'8px', fontSize:'14px', outline:'none' },
-  grid: { display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' },
-  card: { background:'white', borderRadius:'12px', padding:'20px', boxShadow:'0 1px 4px rgba(0,0,0,0.06)', display:'flex', flexDirection:'column', gap:'8px' },
-  cardTop: { display:'flex', justifyContent:'space-between', alignItems:'center' },
-  deptBadge: { background:'#eff6ff', color:'#2563eb', padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:'600' },
-  statusBadge: { padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:'500' },
-  jobTitle: { fontSize:'16px', fontWeight:'700', color:'#0f172a', margin:0 },
-  jobDesc: { fontSize:'13px', color:'#64748b', lineHeight:'1.5', margin:0 },
-  jobMeta: { display:'flex', gap:'12px', flexWrap:'wrap' },
-  metaItem: { fontSize:'12px', color:'#64748b', background:'#f8fafc', padding:'4px 10px', borderRadius:'6px' },
-  cardActions: { marginTop:'8px' },
-  applyBtn: { padding:'8px 20px', background:'linear-gradient(90deg,#2563eb,#0ea5e9)', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'600', fontSize:'13px' },
-  deleteBtn: { padding:'8px 20px', background:'#fee2e2', color:'#dc2626', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'600', fontSize:'13px' },
-};

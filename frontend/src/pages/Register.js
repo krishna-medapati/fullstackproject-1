@@ -2,80 +2,53 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../api';
 import { useAuth } from '../context/AuthContext';
-
 export default function Register() {
-  const [form, setForm] = useState({ name:'', email:'', password:'', role:'student' });
+  const [form, setForm] = useState({name:'',email:'',password:'',role:'student'});
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await API.post('/auth/register', form);
-      login(res.data.user, res.data.token);
+      const res = await API.post('/auth/register',form);
+      login(res.data.user,res.data.token);
       navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.msg || 'Registration failed');
-    }
+    } catch(err){ setError(err.response?.data?.msg||'Registration failed'); }
   };
-
   return (
-    <div style={s.page}>
-      <div style={s.left}>
-        <h1 style={s.brand}>WorkStudy</h1>
-        <p style={s.tagline}>Join thousands of students earning while learning</p>
-        <ul style={s.list}>
-          <li style={s.listItem}>✅ Browse 120+ on-campus jobs</li>
-          <li style={s.listItem}>✅ Apply with one click</li>
-          <li style={s.listItem}>✅ Track your application status</li>
-          <li style={s.listItem}>✅ Manage work hours easily</li>
-        </ul>
+    <div style={{display:'flex',height:'100vh',fontFamily:"'Segoe UI',sans-serif"}}>
+      <div style={{flex:1,background:'#1e40af',color:'white',display:'flex',flexDirection:'column',justifyContent:'center',padding:'60px'}}>
+        <div style={{fontSize:'16px',fontWeight:'700',opacity:0.9,marginBottom:'4px'}}>Work-Study Management System</div>
+        <div style={{fontSize:'12px',opacity:0.6,marginBottom:'40px'}}>FSAD-PS42</div>
+        <h1 style={{fontSize:'28px',fontWeight:'800',lineHeight:'1.3',marginBottom:'32px'}}>Join the work-study program portal</h1>
+        <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+          {['Browse available positions','Submit applications easily','Track your status in real-time','Manage your work schedule'].map(b=>(
+            <div key={b} style={{fontSize:'15px',opacity:0.85}}>✓ {b}</div>
+          ))}
+        </div>
       </div>
-      <div style={s.right}>
-        <div style={s.card}>
-          <h2 style={s.title}>Create account</h2>
-          <p style={s.sub}>Start your work-study journey</p>
-          {error && <div style={s.error}>{error}</div>}
+      <div style={{flex:1,background:'#f8f9fa',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div style={{background:'#fff',padding:'40px',borderRadius:'12px',width:'380px',border:'1px solid #e5e7eb',boxShadow:'0 2px 12px rgba(0,0,0,0.06)'}}>
+          <h2 style={{fontSize:'20px',fontWeight:'700',color:'#111827',margin:'0 0 6px 0'}}>Create your account</h2>
+          <p style={{color:'#6b7280',fontSize:'14px',marginBottom:'24px'}}>Fill in your details to get started</p>
+          {error&&<div style={{background:'#fef2f2',border:'1px solid #fecaca',color:'#dc2626',padding:'10px 14px',borderRadius:'8px',marginBottom:'16px',fontSize:'13px'}}>{error}</div>}
           <form onSubmit={handleSubmit}>
-            <label style={s.label}>Full Name</label>
-            <input style={s.input} placeholder="John Smith"
-              onChange={e => setForm({...form, name: e.target.value})} required />
-            <label style={s.label}>Email</label>
-            <input style={s.input} type="email" placeholder="you@university.edu"
-              onChange={e => setForm({...form, email: e.target.value})} required />
-            <label style={s.label}>Password</label>
-            <input style={s.input} type="password" placeholder="••••••••"
-              onChange={e => setForm({...form, password: e.target.value})} required />
-            <label style={s.label}>I am a...</label>
-            <select style={s.input} onChange={e => setForm({...form, role: e.target.value})}>
+            <label style={{display:'block',fontSize:'13px',fontWeight:'600',color:'#374151',marginBottom:'6px'}}>Full Name</label>
+            <input style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:'8px',fontSize:'14px',outline:'none',boxSizing:'border-box',marginBottom:'16px'}} placeholder="John Smith" onChange={e=>setForm({...form,name:e.target.value})} required/>
+            <label style={{display:'block',fontSize:'13px',fontWeight:'600',color:'#374151',marginBottom:'6px'}}>Email address</label>
+            <input style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:'8px',fontSize:'14px',outline:'none',boxSizing:'border-box',marginBottom:'16px'}} type="email" placeholder="you@university.edu" onChange={e=>setForm({...form,email:e.target.value})} required/>
+            <label style={{display:'block',fontSize:'13px',fontWeight:'600',color:'#374151',marginBottom:'6px'}}>Password</label>
+            <input style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:'8px',fontSize:'14px',outline:'none',boxSizing:'border-box',marginBottom:'16px'}} type="password" placeholder="Min. 6 characters" onChange={e=>setForm({...form,password:e.target.value})} required/>
+            <label style={{display:'block',fontSize:'13px',fontWeight:'600',color:'#374151',marginBottom:'6px'}}>Role</label>
+            <select style={{width:'100%',padding:'10px 12px',border:'1px solid #e5e7eb',borderRadius:'8px',fontSize:'14px',outline:'none',boxSizing:'border-box',marginBottom:'16px'}} onChange={e=>setForm({...form,role:e.target.value})}>
               <option value="student">Student</option>
               <option value="admin">Administrator</option>
             </select>
-            <button style={s.btn} type="submit">Create Account →</button>
+            <button type="submit" style={{width:'100%',padding:'11px',background:'#2563eb',color:'#fff',border:'none',borderRadius:'8px',fontSize:'15px',fontWeight:'600',cursor:'pointer'}}>Create Account</button>
           </form>
-          <p style={s.switch}>Already have an account? <a href="/" style={s.link}>Sign in</a></p>
+          <p style={{textAlign:'center',marginTop:'20px',fontSize:'13px',color:'#6b7280'}}>Already have an account? <a href="/" style={{color:'#2563eb',fontWeight:'600',textDecoration:'none'}}>Sign in</a></p>
         </div>
       </div>
     </div>
   );
 }
-
-const s = {
-  page: { display:'flex', height:'100vh', fontFamily:'sans-serif' },
-  left: { flex:1, background:'linear-gradient(135deg, #1e3a5f, #2563eb)', color:'white', display:'flex', flexDirection:'column', justifyContent:'center', padding:'60px' },
-  brand: { fontSize:'36px', fontWeight:'800', margin:'0 0 16px 0' },
-  tagline: { fontSize:'18px', opacity:0.85, marginBottom:'40px', lineHeight:'1.6' },
-  list: { listStyle:'none', padding:0, display:'flex', flexDirection:'column', gap:'14px' },
-  listItem: { fontSize:'16px', opacity:0.9 },
-  right: { flex:1, background:'#f8fafc', display:'flex', alignItems:'center', justifyContent:'center' },
-  card: { background:'white', padding:'48px', borderRadius:'16px', width:'380px', boxShadow:'0 4px 24px rgba(0,0,0,0.08)' },
-  title: { fontSize:'24px', fontWeight:'700', color:'#0f172a', margin:'0 0 8px 0' },
-  sub: { color:'#64748b', marginBottom:'28px', fontSize:'15px' },
-  label: { display:'block', fontSize:'13px', fontWeight:'600', color:'#374151', marginBottom:'6px' },
-  input: { width:'100%', padding:'11px 14px', border:'1.5px solid #e2e8f0', borderRadius:'8px', fontSize:'15px', outline:'none', boxSizing:'border-box', marginBottom:'16px' },
-  btn: { width:'100%', padding:'13px', marginTop:'8px', background:'linear-gradient(90deg, #2563eb, #0ea5e9)', color:'white', border:'none', borderRadius:'8px', fontSize:'16px', fontWeight:'600', cursor:'pointer' },
-  switch: { textAlign:'center', marginTop:'20px', fontSize:'14px', color:'#64748b' },
-  link: { color:'#2563eb', textDecoration:'none', fontWeight:'600' },
-  error: { background:'#fee2e2', color:'#dc2626', padding:'10px 14px', borderRadius:'8px', marginBottom:'16px', fontSize:'14px' },
-};
