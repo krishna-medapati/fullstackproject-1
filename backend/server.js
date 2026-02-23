@@ -11,6 +11,8 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/students', require('./routes/students'));
 app.use('/api/jobs', require('./routes/jobs'));
+app.use('/api/shifts', require('./routes/shifts'));
+app.use('/api/shifts', require('./routes/shifts'));
 app.use('/api/applications', require('./routes/applications'));
 
 mongoose.connect(process.env.MONGO_URI)

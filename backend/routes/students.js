@@ -4,19 +4,23 @@ const User = require('../models/User');
 
 router.get('/', auth, async (req, res) => {
   try {
-    const students = await User.find({ role: 'student' }).select('-password');
+    const students = await User.find({role:'student'}).select('-password');
     res.json(students);
-  } catch (err) {
-    res.status(500).json({ msg: err.message });
-  }
+  } catch(err){ res.status(500).json({msg:err.message}); }
 });
 
-router.get('/:id', auth, async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   try {
-    const student = await User.findById(req.params.id).select('-password');
-    res.json(student);
-  } catch (err) {
-    res.status(500).json({ msg: err.message });
-  }
+    const updated = await User.findByIdAndUpdate(req.params.id, req.body, {new:true}).select('-password');
+    res.json(updated);
+  } catch(err){ res.status(500).json({msg:err.message}); }
 });
+
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({msg:'Student deleted'});
+  } catch(err){ res.status(500).json({msg:err.message}); }
+});
+
 module.exports = router;
