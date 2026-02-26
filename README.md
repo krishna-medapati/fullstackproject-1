@@ -6,7 +6,7 @@ A full-stack web application to manage student work-study programs on campus.
 
 ---
 
-## 👥 Team Members
+## Team Members
 
 | Name | Student ID | Role |
 |------|-----------|------|
@@ -18,7 +18,7 @@ A full-stack web application to manage student work-study programs on campus.
 
 ---
 
-## 🚀 Live Demo
+## Live Demo
 
 - **Frontend:** https://fullstackproject-1-evd8gtgol-krishna-medapatis-projects.vercel.app/
 - **GitHub:** https://github.com/krishna-medapati/fullstackproject-1
@@ -26,7 +26,7 @@ A full-stack web application to manage student work-study programs on campus.
 
 ---
 
-## 🛠️ Tech Stack
+##Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -38,7 +38,7 @@ A full-stack web application to manage student work-study programs on campus.
 
 ---
 
-## 📋 Features
+## Features
 
 ### Student Role
 - Register and login securely
@@ -56,4 +56,4 @@ A full-stack web application to manage student work-study programs on campus.
 
 ---
 
-## 🗂️ Project Structure
+##Project Structure
