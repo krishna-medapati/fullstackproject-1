@@ -56,4 +56,4 @@ A full-stack web application to manage student work-study programs on campus.
 
 ---
 
-## 🗂️ Project Structure
+## 🗂️ Project Structure.
