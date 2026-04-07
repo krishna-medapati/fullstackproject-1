@@ -8,14 +8,28 @@ const HOURS = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '1
 
 function getDay(dateStr) {
   if (!dateStr) return null;
-  const d = new Date(dateStr);
-  const day = d.getDay();
-  const map = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday' };
-  return map[day] || null;
+  let year, month, day;
+  if (dateStr.includes('/')) {
+    // Handle DD/MM/YYYY format
+    const parts = dateStr.split('/');
+    day = parseInt(parts[0]); month = parseInt(parts[1]) - 1; year = parseInt(parts[2]);
+  } else {
+    // Handle YYYY-MM-DD format
+    const parts = dateStr.split('-');
+    year = parseInt(parts[0]); month = parseInt(parts[1]) - 1; day = parseInt(parts[2]);
+  }
+  const d = new Date(year, month, day);
+  const map = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 0: 'Sunday' };
+  return map[d.getDay()] || null;
 }
 
 function timeToHour(t) {
   if (!t) return null;
+  // Round down to nearest hour to match HOURS array (e.g. "12:04" -> "12:00")
+  const parts = t.split(':');
+  if (parts.length >= 2) {
+    return parts[0].padStart(2, '0') + ':00';
+  }
   return t.slice(0, 5);
 }
 
@@ -35,9 +49,10 @@ export default function Schedule() {
       API.get('/shifts').then(r => setShifts(r.data)).catch(() => {});
       API.get('/students').then(r => setStudents(r.data)).catch(() => {});
       API.get('/jobs').then(r => setJobs(r.data)).catch(() => {});
+      API.get('/applications').then(r => setApplications(r.data)).catch(() => {});
     } else {
       API.get('/applications').then(r => {
-        setApplications(r.data.filter(a => a.status === 'approved'));
+        setApplications(r.data);
       }).catch(() => {});
     }
   }, [user]);
@@ -54,14 +69,14 @@ export default function Schedule() {
   };
 
   const handleEdit = (s) => {
-    setForm({ student: s.student?._id || '', job: s.job?._id || '', date: s.date, startTime: s.startTime, endTime: s.endTime, location: s.location || '', notes: s.notes || '' });
-    setEditId(s._id); setShowForm(true);
+    setForm({ student: s.student?.id?.toString() || '', job: s.job?.id?.toString() || '', date: s.date, startTime: s.startTime, endTime: s.endTime, location: s.location || '', notes: s.notes || '' });
+    setEditId(s.id); setShowForm(true);
   };
 
   const handleDelete = async (id) => {
     if (window.confirm('Delete this shift?')) {
       await API.delete('/shifts/' + id);
-      setShifts(shifts.filter(s => s._id !== id));
+      setShifts(shifts.filter(s => s.id !== id));
     }
   };
 
@@ -78,6 +93,26 @@ export default function Schedule() {
     }
   });
 
+  // Build appGrid for admin - from approved applications using job's workDays and timeSlots
+  const appGrid = {};
+  DAYS.forEach(d => { appGrid[d] = {}; });
+  const approvedApps = applications.filter(a => a.status === 'approved');
+  approvedApps.forEach(app => {
+    const jobId = app.job?.id || app.jobId;
+    const fullJob = jobs.find(j => j.id?.toString() === jobId?.toString()) || app.job;
+    const workDays = fullJob?.workDays || [];
+    const timeSlots = fullJob?.timeSlots || [];
+    timeSlots.forEach(slot => {
+      const startTime = slot.includes('-') ? slot.split('-')[0].trim() : slot.trim();
+      workDays.forEach(day => {
+        if (appGrid[day]) {
+          if (!appGrid[day][startTime]) appGrid[day][startTime] = [];
+          appGrid[day][startTime].push(app);
+        }
+      });
+    });
+  });
+
   // Build timetable for student (from approved applications - no date, so show by job)
   const sColor = { scheduled: { bg: '#dbeafe', color: '#1d4ed8', border: '#bfdbfe' }, completed: { bg: '#dcfce7', color: '#15803d', border: '#bbf7d0' }, cancelled: { bg: '#fee2e2', color: '#dc2626', border: '#fecaca' } };
 
@@ -89,7 +124,7 @@ export default function Schedule() {
           <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>Your approved job schedule</p>
         </div>
 
-        {applications.length === 0 ? (
+        {applications.filter(a => a.status === 'approved').length === 0 ? (
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '60px', textAlign: 'center', color: '#9ca3af' }}>
             <div style={{ fontSize: '40px', marginBottom: '12px' }}>📅</div>
             <div style={{ fontSize: '16px', fontWeight: '600', color: '#374151' }}>No approved applications yet</div>
@@ -108,21 +143,34 @@ export default function Schedule() {
                   </tr>
                 </thead>
                 <tbody>
-                  {applications.map((app, i) => (
-                    <tr key={app._id} style={{ background: i % 2 === 0 ? '#fff' : '#f9fafb' }}>
-                      <td style={{ padding: '14px 16px', fontSize: '12px', color: '#6b7280', fontWeight: '600', borderBottom: '1px solid #f3f4f6', whiteSpace: 'nowrap' }}>
-                        {app.job?.title?.slice(0, 12) || '—'}
-                      </td>
-                      {DAYS.map(day => (
-                        <td key={day} style={{ padding: '8px', borderBottom: '1px solid #f3f4f6', borderLeft: '1px solid #f3f4f6', textAlign: 'center', verticalAlign: 'middle' }}>
-                          <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '6px 8px', display: 'inline-block', minWidth: '80px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: '600', color: '#15803d' }}>✓ Approved</div>
-                            <div style={{ fontSize: '10px', color: '#166534', marginTop: '2px' }}>{app.job?.department || ''}</div>
-                          </div>
+                  {applications.filter(a => a.status === 'approved').map((app, i) => {
+                    const workDays = app.job?.workDays || [];
+                    const timeSlots = app.job?.timeSlots || [];
+                    const timeLabel = timeSlots.length > 0 ? timeSlots[0] : '—';
+                    return (
+                      <tr key={app.id} style={{ background: i % 2 === 0 ? '#fff' : '#f9fafb' }}>
+                        <td style={{ padding: '14px 16px', fontSize: '12px', color: '#6b7280', fontWeight: '600', borderBottom: '1px solid #f3f4f6', whiteSpace: 'nowrap' }}>
+                          <div>{app.job?.title?.slice(0, 12) || '—'}</div>
+                          <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>{timeLabel}</div>
                         </td>
-                      ))}
-                    </tr>
-                  ))}
+                        {DAYS.map(day => {
+                          const isWorkDay = workDays.includes(day);
+                          return (
+                            <td key={day} style={{ padding: '8px', borderBottom: '1px solid #f3f4f6', borderLeft: '1px solid #f3f4f6', textAlign: 'center', verticalAlign: 'middle' }}>
+                              {isWorkDay ? (
+                                <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '6px 8px', display: 'inline-block', minWidth: '80px' }}>
+                                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#15803d' }}>✓ Approved</div>
+                                  <div style={{ fontSize: '10px', color: '#166534', marginTop: '2px' }}>{app.job?.department || ''}</div>
+                                </div>
+                              ) : (
+                                <span style={{ color: '#e5e7eb', fontSize: '18px' }}>—</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -156,14 +204,24 @@ export default function Schedule() {
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '5px' }}>Student *</label>
                 <select required value={form.student} style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} onChange={e => setForm({ ...form, student: e.target.value })}>
                   <option value="">Select student...</option>
-                  {students.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                  {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '5px' }}>Job *</label>
-                <select required value={form.job} style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} onChange={e => setForm({ ...form, job: e.target.value })}>
+                <select required value={form.job} style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} onChange={e => {
+                    const selectedJob = jobs.find(j => j.id?.toString() === e.target.value?.toString());
+                    const timeSlot = selectedJob?.timeSlots?.[0] || '';
+                    let startTime = '', endTime = '';
+                    if (timeSlot && timeSlot.includes('-')) {
+                      const parts = timeSlot.split('-');
+                      startTime = parts[0].trim();
+                      endTime = parts[1].trim();
+                    }
+                    setForm({ ...form, job: e.target.value, startTime, endTime });
+                  }}>
                   <option value="">Select job...</option>
-                  {jobs.map(j => <option key={j._id} value={j._id}>{j.title} — {j.department}</option>)}
+                  {jobs.map(j => <option key={j.id} value={j.id}>{j.title} — {j.department}</option>)}
                 </select>
               </div>
               <div style={{ marginBottom: '14px' }}>
@@ -229,18 +287,25 @@ export default function Schedule() {
                         {cellShifts.map(shift => {
                           const sc = sColor[shift.status] || sColor.scheduled;
                           return (
-                            <div key={shift._id} style={{ background: sc.bg, border: '1px solid ' + sc.border, borderRadius: '6px', padding: '5px 7px', marginBottom: '3px', cursor: 'pointer' }}
+                            <div key={shift.id} style={{ background: sc.bg, border: '1px solid ' + sc.border, borderRadius: '6px', padding: '5px 7px', marginBottom: '3px', cursor: 'pointer' }}
                               onClick={() => handleEdit(shift)}>
                               <div style={{ fontSize: '11px', fontWeight: '700', color: sc.color }}>{shift.student?.name || '—'}</div>
                               <div style={{ fontSize: '10px', color: sc.color, opacity: 0.85, marginTop: '1px' }}>{shift.job?.title || '—'}</div>
                               <div style={{ fontSize: '10px', color: sc.color, opacity: 0.7 }}>{shift.startTime}–{shift.endTime}</div>
-                              <button onClick={e => { e.stopPropagation(); handleDelete(shift._id); }}
+                              <button onClick={e => { e.stopPropagation(); handleDelete(shift.id); }}
                                 style={{ marginTop: '3px', fontSize: '9px', padding: '1px 5px', background: 'rgba(255,255,255,0.6)', border: '1px solid ' + sc.border, borderRadius: '4px', cursor: 'pointer', color: sc.color }}>
                                 delete
                               </button>
                             </div>
                           );
                         })}
+                        {(appGrid[day]?.[hour] || []).map(app => (
+                          <div key={'app-' + app.id} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '5px 7px', marginBottom: '3px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: '700', color: '#15803d' }}>✓ {app.student?.name || '—'}</div>
+                            <div style={{ fontSize: '10px', color: '#166534', opacity: 0.85, marginTop: '1px' }}>{app.job?.title || jobs.find(j=>j.id?.toString()===app.job?.id?.toString())?.title || '—'}</div>
+                            <div style={{ fontSize: '10px', color: '#166534', opacity: 0.7 }}>{(jobs.find(j=>j.id?.toString()===app.job?.id?.toString())?.timeSlots || app.job?.timeSlots || [])[0] || ''}</div>
+                          </div>
+                        ))}
                       </td>
                     );
                   })}

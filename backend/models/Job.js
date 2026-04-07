@@ -6,6 +6,10 @@ const JobSchema = new mongoose.Schema({
   hoursPerWeek: { type: Number },
   pay: { type: Number },
   slots: { type: Number, default: 1 },
-  status: { type: String, enum: ['open', 'closed'], default: 'open' }
+  status: { type: String, enum: ['open', 'closed'], default: 'open' },
+  timeSlots: [{ type: String }],
+  workDays: [{ type: String }],
+  location: { type: String },
+  salary: { type: String }
 }, { timestamps: true });
 module.exports = mongoose.model('Job', JobSchema);
