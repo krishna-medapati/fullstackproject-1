@@ -3,7 +3,7 @@ import Layout from '../components/Layout.jsx';
 import API from '../api';
 import { useAuth } from '../context/AuthContext.jsx';
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const HOURS = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
 
 function getDay(dateStr) {
